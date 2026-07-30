@@ -1,0 +1,267 @@
+:root {
+  --primary: #256ef4;
+  --primary-hover: #0b50d0;
+  --primary-soft: #ecf2fe;
+  --text: #1e2124;
+  --body: #464c53;
+  --muted: #6d7882;
+  --line: #b1b8be;
+  --line-strong: #58616a;
+  --surface: #f4f5f6;
+  --white: #ffffff;
+  --point: #d63d4a;
+  --success: #228738;
+  --warning: #ffb114;
+  --info: #0b78cb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  font-family: "Pretendard GOV", "Pretendard", "Noto Sans KR", system-ui, sans-serif;
+  color: var(--text);
+  background: var(--white);
+  letter-spacing: 0;
+}
+
+button {
+  font: inherit;
+}
+
+button:focus-visible,
+.room-card:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px var(--primary);
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  gap: 16px;
+  align-items: center;
+  min-height: 80px;
+  padding: 12px 24px;
+  border-bottom: 1px solid #cdd1d5;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(10px);
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 24px;
+  line-height: 1.5;
+}
+
+h2 {
+  font-size: clamp(28px, 5vw, 40px);
+  line-height: 1.35;
+}
+
+.eyebrow {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.top-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.icon-button,
+.ghost-button,
+.primary-button {
+  min-height: 48px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.icon-button {
+  border: 1px solid var(--line);
+  background: var(--white);
+  color: var(--text);
+  font-size: 24px;
+}
+
+.ghost-button {
+  padding: 0 16px;
+  border: 1px solid var(--line-strong);
+  background: var(--white);
+  color: var(--text);
+}
+
+.ghost-button:hover {
+  background: var(--surface);
+}
+
+.home {
+  width: min(1200px, calc(100vw - 48px));
+  margin: 0 auto;
+  padding: 48px 0 64px;
+}
+
+.hero {
+  display: grid;
+  gap: 16px;
+  padding: 24px 0 40px;
+  border-bottom: 1px solid #cdd1d5;
+}
+
+.hero p:last-child {
+  max-width: 720px;
+  color: var(--body);
+  font-size: 17px;
+  line-height: 1.5;
+}
+
+.badge {
+  width: fit-content;
+  min-height: 24px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--primary);
+  color: var(--white);
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.room-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  padding-top: 24px;
+}
+
+.room-card {
+  display: grid;
+  min-height: 160px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--white);
+  text-align: left;
+  cursor: pointer;
+}
+
+.room-card:hover {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.room-card strong {
+  font-size: 19px;
+  line-height: 1.5;
+}
+
+.room-card span {
+  align-self: end;
+  color: var(--body);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.playroom {
+  position: relative;
+  height: calc(100vh - 80px);
+  overflow: hidden;
+  background: #f9fafb;
+}
+
+.room-panel {
+  position: absolute;
+  left: 24px;
+  top: 24px;
+  z-index: 2;
+  display: flex;
+  gap: 24px;
+  align-items: start;
+  max-width: min(620px, calc(100vw - 48px));
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.room-panel h2 {
+  font-size: 24px;
+}
+
+#roomHint {
+  color: var(--body);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.room-stats {
+  display: grid;
+  gap: 4px;
+  min-width: 76px;
+  text-align: right;
+}
+
+.room-stats span:first-child {
+  color: var(--primary-hover);
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.room-stats span:last-child {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+#stage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+.hidden {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .topbar {
+    grid-template-columns: 44px 1fr;
+    padding: 10px 16px;
+  }
+
+  .top-actions {
+    grid-column: 1 / -1;
+  }
+
+  .ghost-button {
+    flex: 1;
+  }
+
+  .home {
+    width: calc(100vw - 32px);
+    padding-top: 24px;
+  }
+
+  .playroom {
+    height: calc(100vh - 138px);
+  }
+
+  .room-panel {
+    left: 16px;
+    right: 16px;
+    top: 16px;
+    max-width: none;
+    padding: 16px;
+  }
+}
