@@ -33,6 +33,7 @@ let particles = [];
 let pops = 0;
 let audio = null;
 let soundOn = false;
+let masterGain = null;
 let peelProgress = 0;
 
 rooms.forEach(([id, name, desc]) => {
@@ -48,9 +49,12 @@ document.querySelector("#homeBtn").addEventListener("click", showHome);
 document.querySelector("#resetBtn").addEventListener("click", () => initRoom(activeRoom));
 soundBtn.addEventListener("click", () => {
   soundOn = !soundOn;
-  soundBtn.textContent = soundOn ? "소리 끄기" : "소리 켜기";
+  ensureAudio();
+  soundBtn.textContent = soundOn ? "ASMR 소리 켜짐" : "ASMR 소리 켜기";
+  soundBtn.classList.toggle("sound-on", soundOn);
+  soundBtn.classList.toggle("sound-off", !soundOn);
   soundBtn.setAttribute("aria-pressed", String(soundOn));
-  if (soundOn && !audio) audio = new AudioContext();
+  if (soundOn) satisfyingClick(360, 0.08);
 });
 
 function openRoom(id) {
@@ -80,6 +84,7 @@ function resize() {
 window.addEventListener("resize", resize);
 
 canvas.addEventListener("pointerdown", (event) => {
+  ensureAudio();
   pointer.down = true;
   movePointer(event);
   canvas.setPointerCapture(event.pointerId);
@@ -221,7 +226,7 @@ function interact(isTap) {
       const insideX = pointer.x > block.x && pointer.x < block.x + block.w;
       if (insideX && insideY && block.cut < 1) {
         block.cut = Math.min(1, block.cut + 0.035 + pointer.speed * 0.002);
-        if (Math.random() < 0.25) softNoise("slice");
+        if (Math.random() < 0.45) softNoise("slice");
         addParticle(pointer.x, pointer.y, "slice");
       }
     });
@@ -234,6 +239,7 @@ function interact(isTap) {
         pops += 1;
         counter.textContent = String(pops);
         softNoise("crunch");
+        satisfyingClick(120 + Math.random() * 90, 0.07);
         pulse(tile.x + tile.w / 2, tile.y + tile.h / 2, tile.color);
       }
     });
@@ -242,7 +248,7 @@ function interact(isTap) {
     const film = items[0];
     if (film && pointer.y > film.y - 60 && pointer.y < film.y + film.h + 60) {
       peelProgress = Math.max(peelProgress, Math.min(1, (pointer.x - film.x) / film.w));
-      if (Math.random() < 0.35) softNoise("peel");
+      if (Math.random() < 0.55) softNoise("peel");
       addParticle(pointer.x, pointer.y, "peel");
     }
   }
@@ -252,9 +258,12 @@ function interact(isTap) {
   }
   if (activeRoom === "pour" && pointer.down) {
     for (let i = 0; i < 18; i++) items.push({ x: pointer.x + Math.random() * 30 - 15, y: pointer.y, vx: Math.random() * 2 - 1, vy: Math.random() * 2, r: 2, color: palette[Math.floor(Math.random() * palette.length)] });
-    softNoise("sand");
+    if (Math.random() < 0.45) softNoise("sand");
   }
-  if (activeRoom === "jelly" && isTap) pulse(120, 180);
+  if (activeRoom === "jelly" && isTap) {
+    pulse(pointer.x, pointer.y, "#256ef4");
+    satisfyingClick(95, 0.12);
+  }
 }
 
 function popBubble(bubble) {
@@ -262,7 +271,7 @@ function popBubble(bubble) {
   pops += 1;
   counter.textContent = String(pops);
   pulse(bubble.x, bubble.y, bubble.color);
-  beep(180 + pointer.speed * 12);
+  popSound(220 + pointer.speed * 18);
   if (pops >= 100) initRoom("bubble");
 }
 
@@ -277,37 +286,59 @@ function pulse(x, y, color = "#256ef4") {
   }
 }
 
-function beep(freq) {
+function ensureAudio() {
+  if (!audio) {
+    audio = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = audio.createGain();
+    masterGain.gain.value = 0.9;
+    masterGain.connect(audio.destination);
+  }
+  if (audio.state === "suspended") audio.resume();
+}
+
+function outputNode() {
+  return masterGain || audio.destination;
+}
+
+function satisfyingClick(freq, duration = 0.045) {
   if (!soundOn || !audio) return;
   const osc = audio.createOscillator();
   const gain = audio.createGain();
-  osc.frequency.value = Math.min(900, freq);
-  gain.gain.value = 0.04;
-  osc.connect(gain).connect(audio.destination);
+  osc.type = "triangle";
+  osc.frequency.setValueAtTime(freq, audio.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(Math.max(80, freq * 0.35), audio.currentTime + duration);
+  gain.gain.setValueAtTime(0.12, audio.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + duration);
+  osc.connect(gain).connect(outputNode());
   osc.start();
-  gain.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + 0.06);
-  osc.stop(audio.currentTime + 0.07);
+  osc.stop(audio.currentTime + duration + 0.01);
+}
+
+function popSound(freq) {
+  satisfyingClick(Math.min(950, freq), 0.055);
+  softNoise("pop");
   if (navigator.vibrate) navigator.vibrate(8);
 }
 
 function softNoise(kind) {
   if (!soundOn || !audio) return;
-  const duration = kind === "peel" ? 0.12 : kind === "slice" ? 0.08 : 0.045;
+  const duration = kind === "peel" ? 0.18 : kind === "slice" ? 0.1 : kind === "sand" ? 0.06 : 0.05;
   const buffer = audio.createBuffer(1, Math.floor(audio.sampleRate * duration), audio.sampleRate);
   const data = buffer.getChannelData(0);
   for (let i = 0; i < data.length; i++) {
     const fade = 1 - i / data.length;
     const grain = Math.random() * 2 - 1;
-    data[i] = grain * fade * (kind === "crunch" ? 0.32 : 0.12);
+    const crackle = kind === "crunch" && Math.random() > 0.78 ? 1 : 0.25;
+    data[i] = grain * fade * crackle * (kind === "crunch" ? 0.55 : kind === "sand" ? 0.22 : 0.18);
   }
   const source = audio.createBufferSource();
   const filter = audio.createBiquadFilter();
   const gain = audio.createGain();
-  filter.type = kind === "crunch" ? "bandpass" : "lowpass";
-  filter.frequency.value = kind === "sand" ? 900 : kind === "peel" ? 1400 : kind === "slice" ? 1800 : 2600;
-  gain.gain.value = kind === "crunch" ? 0.08 : 0.035;
+  filter.type = kind === "crunch" || kind === "pop" ? "bandpass" : "lowpass";
+  filter.frequency.value = kind === "sand" ? 1100 : kind === "peel" ? 1700 : kind === "slice" ? 2200 : kind === "pop" ? 1200 : 3200;
+  gain.gain.value = kind === "crunch" ? 0.22 : kind === "sand" ? 0.12 : kind === "peel" ? 0.1 : 0.08;
   source.buffer = buffer;
-  source.connect(filter).connect(gain).connect(audio.destination);
+  source.connect(filter).connect(gain).connect(outputNode());
   source.start();
   if (navigator.vibrate && (kind === "crunch" || kind === "peel")) navigator.vibrate(kind === "crunch" ? 12 : 5);
 }
