@@ -63,9 +63,11 @@ soundBtn.classList.add("sound-on");
 soundBtn.setAttribute("aria-pressed", "true");
 
 function openRoom(id) {
+  ensureAudio();
   activeRoom = id;
   homeView.classList.add("hidden");
   playView.classList.remove("hidden");
+  playStartSound();
   requestAnimationFrame(() => resize());
 }
 
@@ -295,7 +297,7 @@ function ensureAudio() {
   if (!audio) {
     audio = new (window.AudioContext || window.webkitAudioContext)();
     masterGain = audio.createGain();
-    masterGain.gain.value = 0.9;
+    masterGain.gain.value = 1.8;
     masterGain.connect(audio.destination);
   }
   if (audio.state === "suspended") audio.resume();
@@ -312,7 +314,7 @@ function satisfyingClick(freq, duration = 0.045) {
   osc.type = "triangle";
   osc.frequency.setValueAtTime(freq, audio.currentTime);
   osc.frequency.exponentialRampToValueAtTime(Math.max(80, freq * 0.35), audio.currentTime + duration);
-  gain.gain.setValueAtTime(0.12, audio.currentTime);
+  gain.gain.setValueAtTime(0.42, audio.currentTime);
   gain.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + duration);
   osc.connect(gain).connect(outputNode());
   osc.start();
@@ -320,28 +322,52 @@ function satisfyingClick(freq, duration = 0.045) {
 }
 
 function popSound(freq) {
+  ensureAudio();
   satisfyingClick(Math.min(950, freq), 0.055);
   softNoise("pop");
+  toneBurst(95, "sine", 0.09, 0.18);
   if (navigator.vibrate) navigator.vibrate(8);
 }
 
-function softNoise(kind) {
+function playStartSound() {
   if (!soundOn || !audio) return;
-  const duration = kind === "peel" ? 0.18 : kind === "slice" ? 0.1 : kind === "sand" ? 0.06 : 0.05;
+  satisfyingClick(520, 0.1);
+  setTimeout(() => satisfyingClick(760, 0.08), 70);
+  setTimeout(() => toneBurst(130, "sine", 0.12, 0.18), 115);
+}
+
+function toneBurst(freq, type = "sine", duration = 0.12, volume = 0.22) {
+  if (!soundOn || !audio) return;
+  const osc = audio.createOscillator();
+  const gain = audio.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, audio.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(Math.max(40, freq * 0.55), audio.currentTime + duration);
+  gain.gain.setValueAtTime(volume, audio.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + duration);
+  osc.connect(gain).connect(outputNode());
+  osc.start();
+  osc.stop(audio.currentTime + duration + 0.02);
+}
+
+function softNoise(kind) {
+  ensureAudio();
+  if (!soundOn || !audio) return;
+  const duration = kind === "peel" ? 0.42 : kind === "slice" ? 0.22 : kind === "sand" ? 0.18 : 0.12;
   const buffer = audio.createBuffer(1, Math.floor(audio.sampleRate * duration), audio.sampleRate);
   const data = buffer.getChannelData(0);
   for (let i = 0; i < data.length; i++) {
     const fade = 1 - i / data.length;
     const grain = Math.random() * 2 - 1;
     const crackle = kind === "crunch" && Math.random() > 0.78 ? 1 : 0.25;
-    data[i] = grain * fade * crackle * (kind === "crunch" ? 0.55 : kind === "sand" ? 0.22 : 0.18);
+    data[i] = grain * fade * crackle * (kind === "crunch" ? 1.35 : kind === "sand" ? 0.75 : 0.62);
   }
   const source = audio.createBufferSource();
   const filter = audio.createBiquadFilter();
   const gain = audio.createGain();
   filter.type = kind === "crunch" || kind === "pop" ? "bandpass" : "lowpass";
   filter.frequency.value = kind === "sand" ? 1100 : kind === "peel" ? 1700 : kind === "slice" ? 2200 : kind === "pop" ? 1200 : 3200;
-  gain.gain.value = kind === "crunch" ? 0.22 : kind === "sand" ? 0.12 : kind === "peel" ? 0.1 : 0.08;
+  gain.gain.value = kind === "crunch" ? 0.78 : kind === "sand" ? 0.42 : kind === "peel" ? 0.38 : 0.34;
   source.buffer = buffer;
   source.connect(filter).connect(gain).connect(outputNode());
   source.start();
