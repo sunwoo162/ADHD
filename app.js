@@ -32,7 +32,7 @@ let items = [];
 let particles = [];
 let pops = 0;
 let audio = null;
-let soundOn = false;
+let soundOn = true;
 let masterGain = null;
 let peelProgress = 0;
 
@@ -56,6 +56,11 @@ soundBtn.addEventListener("click", () => {
   soundBtn.setAttribute("aria-pressed", String(soundOn));
   if (soundOn) satisfyingClick(360, 0.08);
 });
+
+soundBtn.textContent = "ASMR 소리 켜짐";
+soundBtn.classList.remove("sound-off");
+soundBtn.classList.add("sound-on");
+soundBtn.setAttribute("aria-pressed", "true");
 
 function openRoom(id) {
   activeRoom = id;
